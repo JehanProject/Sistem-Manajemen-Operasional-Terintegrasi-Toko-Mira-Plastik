@@ -27,26 +27,37 @@
     <?php if ($accounts === []): ?><p class="error alert alert-danger" role="alert">Akun kas/bank aktif belum tersedia; pembayaran piutang belum dapat dicatat.</p><?php endif ?>
 
     <section class="panel card reminders" aria-labelledby="reminders-title">
-        <h2 id="reminders-title">Pengingat jatuh tempo</h2>
-        <p class="muted">Tagihan terlambat, jatuh tempo hari ini, atau jatuh tempo sampai <?= esc(date('d/m/Y', strtotime($reminderCutoff))) ?>.</p>
+        <h2 id="reminders-title">Tindak lanjut penagihan</h2>
+        <p class="muted">Prioritaskan tagihan yang terlambat, jatuh tempo hari ini, dan yang akan jatuh tempo hingga <?= esc(date('d/m/Y', strtotime($reminderCutoff))) ?>.</p>
         <?php if ($reminders['overdue'] === [] && $reminders['due_today'] === [] && $reminders['upcoming'] === []): ?>
-            <p class="muted" role="status">Tidak ada tagihan yang perlu ditindaklanjuti dalam periode ini.</p>
+            <p class="muted" role="status">Tidak ada tagihan yang perlu ditagih dalam periode ini.</p>
         <?php else: ?>
             <?php foreach ([
-                'overdue' => 'Terlambat',
+                'overdue' => 'Sudah lewat jatuh tempo',
                 'due_today' => 'Jatuh tempo hari ini',
-                'upcoming' => 'Jatuh tempo dalam 7 hari',
+                'upcoming' => 'Jatuh tempo 7 hari ke depan',
             ] as $reminderType => $reminderLabel): ?>
                 <?php if ($reminders[$reminderType] !== []): ?>
                     <div class="reminder-group <?= $reminderType === 'overdue' ? 'overdue' : '' ?>">
-                        <h3><?= esc($reminderLabel) ?> (<?= count($reminders[$reminderType]) ?>)</h3>
+                        <?php $reminderTotal = array_sum(array_column($reminders[$reminderType], 'outstanding_amount')); ?>
+                        <div class="reminder-heading">
+                            <h3><?= esc($reminderLabel) ?> <span>(<?= count($reminders[$reminderType]) ?> tagihan)</span></h3>
+                            <strong>Rp <?= esc(number_format((float) $reminderTotal, 2, ',', '.')) ?></strong>
+                        </div>
                         <ul>
                             <?php foreach ($reminders[$reminderType] as $reminder): ?>
+                                <?php
+                                $dueDate = new DateTimeImmutable($reminder['due_date']);
+                                $daysUntilDue = (int) $todayDate->diff($dueDate)->format('%r%a');
+                                $dueLabel = $daysUntilDue < 0
+                                    ? 'Terlambat ' . abs($daysUntilDue) . ' hari'
+                                    : ($daysUntilDue === 0 ? 'Jatuh tempo hari ini' : 'Jatuh tempo ' . $dueDate->format('d/m/Y'));
+                                ?>
                                 <li>
                                     <a href="#receivable-<?= esc($reminder['receivable_id']) ?>">
                                         <?= esc($reminder['customer_name']) ?> · <?= esc($reminder['invoice_number'] ?? 'Saldo piutang awal') ?>
                                     </a>
-                                    — <?= esc(date('d/m/Y', strtotime($reminder['due_date']))) ?> · Sisa Rp <?= esc(number_format((float) $reminder['outstanding_amount'], 2, ',', '.')) ?>
+                                    <span class="reminder-detail"><?= esc($dueLabel) ?> · Sisa Rp <?= esc(number_format((float) $reminder['outstanding_amount'], 2, ',', '.')) ?></span>
                                 </li>
                             <?php endforeach ?>
                         </ul>

@@ -10,6 +10,7 @@ class Dashboard extends BaseController
         $roleCode = (string) session()->get('role_code');
         $canViewFinancials = in_array($roleCode, ['OWNER', 'KASIR'], true);
         $today = date('Y-m-d');
+        $reminderCutoff = (new \DateTimeImmutable($today))->modify('+7 days')->format('Y-m-d');
 
         $stock = $db->query(
             "SELECT COUNT(CASE WHEN COALESCE(stock.total_quantity, 0) <= 0 THEN 1 END) AS out_of_stock,
@@ -60,30 +61,35 @@ class Dashboard extends BaseController
 
             $receivables = $db->query(
                 "SELECT
-                    COALESCE(SUM(GREATEST(
-                        piutang.original_amount
-                            - COALESCE(payments.paid_amount, 0.00)
-                            - COALESCE(adjustments.adjusted_amount, 0.00),
-                        0.00
-                    )), 0.00) AS outstanding_amount,
-                    COUNT(CASE WHEN piutang.due_date < ? AND
-                        piutang.original_amount
-                            - COALESCE(payments.paid_amount, 0.00)
-                            - COALESCE(adjustments.adjusted_amount, 0.00) > 0
-                        THEN 1 END) AS overdue_count
-                 FROM piutang
-                 LEFT JOIN (
-                     SELECT receivable_id, SUM(amount) AS paid_amount
-                     FROM pembayaran_piutang
-                     GROUP BY receivable_id
-                 ) AS payments ON payments.receivable_id = piutang.receivable_id
-                 LEFT JOIN (
-                     SELECT receivable_id, SUM(amount) AS adjusted_amount
-                     FROM penyesuaian_piutang
-                     GROUP BY receivable_id
-                 ) AS adjustments ON adjustments.receivable_id = piutang.receivable_id
-                 WHERE piutang.status IN ('OPEN', 'PARTIALLY_PAID')",
-                [$today],
+                    COALESCE(SUM(outstanding_amount), 0.00) AS outstanding_amount,
+                    COUNT(CASE WHEN due_date < ? AND outstanding_amount > 0 THEN 1 END) AS overdue_count,
+                    COALESCE(SUM(CASE WHEN due_date < ? THEN outstanding_amount ELSE 0.00 END), 0.00) AS overdue_amount,
+                    COUNT(CASE WHEN due_date = ? AND outstanding_amount > 0 THEN 1 END) AS due_today_count,
+                    COALESCE(SUM(CASE WHEN due_date = ? THEN outstanding_amount ELSE 0.00 END), 0.00) AS due_today_amount,
+                    COUNT(CASE WHEN due_date > ? AND due_date <= ? AND outstanding_amount > 0 THEN 1 END) AS upcoming_count,
+                    COALESCE(SUM(CASE WHEN due_date > ? AND due_date <= ? THEN outstanding_amount ELSE 0.00 END), 0.00) AS upcoming_amount
+                 FROM (
+                     SELECT piutang.due_date,
+                            GREATEST(
+                                piutang.original_amount
+                                    - COALESCE(payments.paid_amount, 0.00)
+                                    - COALESCE(adjustments.adjusted_amount, 0.00),
+                                0.00
+                            ) AS outstanding_amount
+                     FROM piutang
+                     LEFT JOIN (
+                         SELECT receivable_id, SUM(amount) AS paid_amount
+                         FROM pembayaran_piutang
+                         GROUP BY receivable_id
+                     ) AS payments ON payments.receivable_id = piutang.receivable_id
+                     LEFT JOIN (
+                         SELECT receivable_id, SUM(amount) AS adjusted_amount
+                         FROM penyesuaian_piutang
+                         GROUP BY receivable_id
+                     ) AS adjustments ON adjustments.receivable_id = piutang.receivable_id
+                     WHERE piutang.status IN ('OPEN', 'PARTIALLY_PAID')
+                 ) AS open_receivables",
+                [$today, $today, $today, $today, $today, $reminderCutoff, $today, $reminderCutoff],
             )->getRowArray();
 
             $metrics['saleCount'] = (int) ($sales['sale_count'] ?? 0);
@@ -92,6 +98,11 @@ class Dashboard extends BaseController
             $metrics['wholesaleCount'] = (int) ($sales['wholesale_count'] ?? 0);
             $metrics['outstandingReceivables'] = (float) ($receivables['outstanding_amount'] ?? 0);
             $metrics['overdueCount'] = (int) ($receivables['overdue_count'] ?? 0);
+            $metrics['overdueAmount'] = (float) ($receivables['overdue_amount'] ?? 0);
+            $metrics['dueTodayCount'] = (int) ($receivables['due_today_count'] ?? 0);
+            $metrics['dueTodayAmount'] = (float) ($receivables['due_today_amount'] ?? 0);
+            $metrics['upcomingReceivablesCount'] = (int) ($receivables['upcoming_count'] ?? 0);
+            $metrics['upcomingReceivablesAmount'] = (float) ($receivables['upcoming_amount'] ?? 0);
 
             $adjustments = $db->query(
                 "SELECT COUNT(*) AS pending_count,

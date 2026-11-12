@@ -37,6 +37,7 @@ class Receivables extends BaseController
              ORDER BY (piutang.due_date IS NULL), piutang.due_date, piutang.receivable_id",
         )->getResultArray();
         $today = date('Y-m-d');
+        $todayDate = new \DateTimeImmutable($today);
         $reminderCutoff = (new \DateTimeImmutable($today))->modify('+7 days')->format('Y-m-d');
         $reminders = [
             'overdue' => [],
@@ -61,6 +62,7 @@ class Receivables extends BaseController
             'receivables' => $receivables,
             'reminders' => $reminders,
             'reminderCutoff' => $reminderCutoff,
+            'todayDate' => $todayDate,
             'accounts' => $db->table('akun_kas')
                 ->where('is_active', true)
                 ->orderBy('account_type')
