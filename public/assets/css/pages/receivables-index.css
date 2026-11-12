@@ -21,8 +21,14 @@
         .payment-form button { grid-column: 1 / -1; }
         .overdue { color: #b91c1c; font-weight: 700; }
         .reminder-group { padding: .25rem 0; }
+        .reminder-group + .reminder-group { margin-top: .5rem; padding-top: .75rem; border-top: 1px solid #e2e8f0; }
+        .reminder-heading { display: flex; align-items: baseline; justify-content: space-between; gap: .75rem; }
         .reminder-group h3 { margin-bottom: .25rem; font-size: 1rem; }
+        .reminder-group h3 span { color: #64748b; font-size: .82rem; font-weight: 400; }
+        .reminder-heading > strong { color: #334155; font-size: .9rem; white-space: nowrap; }
+        .reminder-group.overdue .reminder-heading > strong { color: #b91c1c; }
         .reminder-group ul { margin-top: .25rem; padding-left: 1.25rem; }
-        .reminder-group li { margin: .25rem 0; }
+        .reminder-group li { margin: .45rem 0; }
         .reminder-group a { color: inherit; }
+        .reminder-detail { display: block; color: #64748b; font-size: .85rem; }
         @media (max-width: 700px) { header { padding: 1rem; } main { margin-top: 1rem; } .payment-form { min-width: 280px; } }
