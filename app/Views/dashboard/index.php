@@ -158,10 +158,10 @@
                         <span class="dashboard-attention-arrow" aria-hidden="true">›</span>
                     </a>
                 <?php endif ?>
-                <?php if ($canViewFinancials && $metrics['upcomingReceivablesCount'] > 0): ?>
+                <?php if ($canViewFinancials && $metrics['h3ReceivablesCount'] > 0): ?>
                     <a class="dashboard-attention-item" href="<?= site_url('piutang') ?>">
                         <span class="dashboard-attention-icon is-green" aria-hidden="true">i</span>
-                        <span><strong><?= esc($metrics['upcomingReceivablesCount']) ?> piutang segera jatuh tempo</strong><small>Sisa Rp <?= esc(number_format($metrics['upcomingReceivablesAmount'], 0, ',', '.')) ?> · Dalam 7 hari ke depan</small></span>
+                        <span><strong><?= esc($metrics['h3ReceivablesCount']) ?> piutang jatuh tempo H-3</strong><small>Sisa Rp <?= esc(number_format($metrics['h3ReceivablesAmount'], 0, ',', '.')) ?> · Jatuh tempo tepat tiga hari lagi</small></span>
                         <span class="dashboard-attention-arrow" aria-hidden="true">›</span>
                     </a>
                 <?php endif ?>
@@ -173,7 +173,7 @@
                     </a>
                 <?php endif ?>
                 <?php if ((! $canViewFinancials || $metrics['pendingAdjustments'] === 0)
-                    && (! $canViewFinancials || ($metrics['overdueCount'] === 0 && $metrics['dueTodayCount'] === 0 && $metrics['upcomingReceivablesCount'] === 0))
+                    && (! $canViewFinancials || ($metrics['overdueCount'] === 0 && $metrics['dueTodayCount'] === 0 && $metrics['h3ReceivablesCount'] === 0))
                     && $metrics['needsRestock'] === 0): ?>
                     <p class="dashboard-attention-empty">Tidak ada tindakan prioritas saat ini.</p>
                 <?php endif ?>

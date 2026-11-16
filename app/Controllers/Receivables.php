@@ -3,6 +3,7 @@
 namespace App\Controllers;
 
 use App\Libraries\NotificationService;
+use App\Libraries\ReceivableReminderPolicy;
 use CodeIgniter\HTTP\RedirectResponse;
 use DomainException;
 use RuntimeException;
@@ -38,30 +39,27 @@ class Receivables extends BaseController
         )->getResultArray();
         $today = date('Y-m-d');
         $todayDate = new \DateTimeImmutable($today);
-        $reminderCutoff = (new \DateTimeImmutable($today))->modify('+7 days')->format('Y-m-d');
+        $h3Date = $todayDate->modify('+' . ReceivableReminderPolicy::DAYS_BEFORE_DUE . ' days')->format('Y-m-d');
         $reminders = [
             'overdue' => [],
             'due_today' => [],
-            'upcoming' => [],
+            'h3' => [],
         ];
         foreach ($receivables as $receivable) {
-            if ($receivable['due_date'] === null || (float) $receivable['outstanding_amount'] <= 0) {
-                continue;
-            }
-
-            if ($receivable['due_date'] < $today) {
-                $reminders['overdue'][] = $receivable;
-            } elseif ($receivable['due_date'] === $today) {
-                $reminders['due_today'][] = $receivable;
-            } elseif ($receivable['due_date'] <= $reminderCutoff) {
-                $reminders['upcoming'][] = $receivable;
+            $category = ReceivableReminderPolicy::category(
+                $receivable['due_date'],
+                (float) $receivable['outstanding_amount'],
+                $todayDate,
+            );
+            if ($category !== null) {
+                $reminders[$category][] = $receivable;
             }
         }
 
         return view('receivables/index', [
             'receivables' => $receivables,
             'reminders' => $reminders,
-            'reminderCutoff' => $reminderCutoff,
+            'h3Date' => $h3Date,
             'todayDate' => $todayDate,
             'accounts' => $db->table('akun_kas')
                 ->where('is_active', true)

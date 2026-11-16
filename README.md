@@ -81,6 +81,8 @@ Bootstrap 5.3.8 disimpan lokal di `public/assets/vendor/bootstrap`. CSS bersama 
 5. Catat cicilan atau pelunasan melalui halaman piutang.
 6. Dari struk, ajukan Void/Retur; Owner/Kasir memutuskan melalui Persetujuan Void/Retur. Refund tunai/transfer dicatat satu kali penuh setelah uang benar-benar dikembalikan.
 
+Pengingat piutang hanya menampilkan tagihan dengan sisa di atas Rp 0: terlambat jika jatuh tempo sebelum hari ini, jatuh tempo hari ini, atau H-3 jika jatuh tempo tepat tiga hari lagi. Tagihan lunas tidak muncul; tagihan yang dibayar sebagian tetap muncul sebesar sisanya.
+
 Rute utama: `/login`, `/dashboard`, `/profil`, `/notifikasi`, `/barang`, `/stok`, `/stok/mutasi`, `/stok/riwayat`, `/kasir`, `/transaksi`, `/piutang`, `/persetujuan`, `/laporan/penjualan`, `/laporan/laba-rugi`, `/arus-kas`, `/distributor`, `/pengguna`, `/aktivitas`, `/arsip`, dan `/backup`.
 
 ## Batasan Saat Ini
