@@ -56,7 +56,7 @@ Bootstrap 5.3.8 disimpan lokal di `public/assets/vendor/bootstrap`. CSS bersama 
 
 3. Buat skema dan data awal dengan mengimpor [`mira_plastik.sql`](app/Database/mira_plastik.sql) ke MySQL/MariaDB. Skrip ini membuat database `mira_plastik` jika belum ada.
 
-   Untuk database lama, jalankan skrip pembaruan satu kali sesuai kondisi skema: tambahkan satuan eceran dengan [`update_satuan_eceran_grosir.sql`](app/Database/update_satuan_eceran_grosir.sql), jenis satuan dengan [`update_jenis_penjualan_satuan.sql`](app/Database/update_jenis_penjualan_satuan.sql), lalu faktor dan snapshot konversi dengan [`update_konversi_satuan_eceran.sql`](app/Database/update_konversi_satuan_eceran.sql). Jika migrasi konversi sudah pernah dijalankan dengan constraint snapshot lama yang mewajibkan faktor positif, jalankan [`repair_konversi_satuan_eceran.sql`](app/Database/repair_konversi_satuan_eceran.sql) satu kali sebagai gantinya. Untuk mengaktifkan status piutang yang selesai karena koreksi retur, jalankan [`update_sale_adjustment_workflow.sql`](app/Database/update_sale_adjustment_workflow.sql) satu kali. Untuk pencatatan Arus Kas manual, jalankan [`update_manual_cash_transactions.sql`](app/Database/update_manual_cash_transactions.sql) satu kali. Untuk kotak notifikasi pengguna, jalankan [`update_user_notifications.sql`](app/Database/update_user_notifications.sql) satu kali. Jangan jalankan skrip pembaruan pada database baru yang sudah dibuat dari skema terkini.
+   Untuk database lama, jalankan skrip pembaruan satu kali sesuai kondisi skema: tambahkan satuan eceran dengan [`update_satuan_eceran_grosir.sql`](app/Database/update_satuan_eceran_grosir.sql), jenis satuan dengan [`update_jenis_penjualan_satuan.sql`](app/Database/update_jenis_penjualan_satuan.sql), lalu faktor dan snapshot konversi dengan [`update_konversi_satuan_eceran.sql`](app/Database/update_konversi_satuan_eceran.sql). Jika migrasi konversi sudah pernah dijalankan dengan constraint snapshot lama yang mewajibkan faktor positif, jalankan [`repair_konversi_satuan_eceran.sql`](app/Database/repair_konversi_satuan_eceran.sql) satu kali sebagai gantinya. Untuk mengaktifkan status piutang yang selesai karena koreksi retur, jalankan [`update_sale_adjustment_workflow.sql`](app/Database/update_sale_adjustment_workflow.sql) satu kali. Untuk pencatatan Arus Kas manual, jalankan [`update_manual_cash_transactions.sql`](app/Database/update_manual_cash_transactions.sql) satu kali. Untuk kotak notifikasi pengguna, jalankan [`update_user_notifications.sql`](app/Database/update_user_notifications.sql) satu kali. Untuk deduplikasi reminder terjadwal, jalankan [`update_receivable_reminders.sql`](app/Database/update_receivable_reminders.sql) satu kali. Jangan jalankan skrip pembaruan pada database baru yang sudah dibuat dari skema terkini.
 
 4. Buat akun Owner pertama melalui terminal. Perintah akan meminta nama dan username, lalu menampilkan kata sandi yang dibuat secara acak. Simpan kata sandi tersebut karena hanya ditampilkan sekali.
 
@@ -81,7 +81,16 @@ Bootstrap 5.3.8 disimpan lokal di `public/assets/vendor/bootstrap`. CSS bersama 
 5. Catat cicilan atau pelunasan melalui halaman piutang.
 6. Dari struk, ajukan Void/Retur; Owner/Kasir memutuskan melalui Persetujuan Void/Retur. Refund tunai/transfer dicatat satu kali penuh setelah uang benar-benar dikembalikan.
 
-Pengingat piutang hanya menampilkan tagihan dengan sisa di atas Rp 0: terlambat jika jatuh tempo sebelum hari ini, jatuh tempo hari ini, atau H-3 jika jatuh tempo tepat tiga hari lagi. Tagihan lunas tidak muncul; tagihan yang dibayar sebagian tetap muncul sebesar sisanya.
+Pengingat piutang terjadwal memakai tanggal `Asia/Jakarta` dan hanya membuat notifikasi di dalam aplikasi untuk akun Owner/Kasir aktif. Kategori reminder adalah terlambat, jatuh tempo hari ini, atau H-3; hanya sisa tagihan di atas Rp 0 yang diproses. Setiap notifikasi memuat pelanggan, faktur (atau saldo piutang awal), tanggal jatuh tempo, sisa tagihan, kategori, dan tautan ke Piutang. Proses tidak mengirim pesan WhatsApp/email dan tidak berjalan saat halaman Piutang dibuka. Deduplikasi disimpan per piutang, kategori, dan tanggal; piutang terlambat akan diingatkan lagi pada hari berikutnya sampai lunas.
+
+Jalankan `php spark receivables:remind` satu kali setiap hari melalui Windows Task Scheduler atau cron. Atur jadwal host pada zona waktu `Asia/Jakarta` (Windows: `SE Asia Standard Time`); perintah juga menghitung tanggal reminder secara eksplisit dalam `Asia/Jakarta`. Contoh cron pada implementasi yang mendukung `CRON_TZ`:
+
+```cron
+CRON_TZ=Asia/Jakarta
+0 8 * * * cd /path/to/project && php spark receivables:remind
+```
+
+Pada Windows Task Scheduler, buat trigger harian (misalnya pukul 08.00), jalankan `php.exe` dengan argumen `spark receivables:remind`, dan atur **Start in** ke direktori proyek. Aplikasi tidak mendaftarkan tugas OS secara otomatis.
 
 Rute utama: `/login`, `/dashboard`, `/profil`, `/notifikasi`, `/barang`, `/stok`, `/stok/mutasi`, `/stok/riwayat`, `/kasir`, `/transaksi`, `/piutang`, `/persetujuan`, `/laporan/penjualan`, `/laporan/laba-rugi`, `/arus-kas`, `/distributor`, `/pengguna`, `/aktivitas`, `/arsip`, dan `/backup`.
 
