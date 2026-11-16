@@ -1,34 +1,364 @@
-:root { font-family: inherit; color: var(--app-text); background: var(--app-background); }
-        * { box-sizing: border-box; }
-        body { margin: 0; }
-        header { display: flex; justify-content: space-between; align-items: center; padding: 1rem max(1rem, calc((100% - 1180px) / 2)); background: var(--app-primary); color: #fff; }
-        header a { color: #fff; text-decoration: none; font-weight: 700; }
-        main { max-width: 1180px; margin: 2rem auto; padding: 0 1rem; }
-        .toolbar { display: flex; align-items: center; gap: .75rem; flex-wrap: wrap; }
-        .panel { margin: 1rem 0; padding: 1.25rem; border-radius: .75rem; background: #fff; box-shadow: 0 8px 28px #0f172a12; }
-        h1 { margin-bottom: .25rem; } h2 { margin-top: 0; }
-        .button, button { display: inline-block; padding: .6rem .85rem; border: 0; border-radius: .4rem; background: var(--app-primary); color: #fff; font: inherit; text-decoration: none; font-weight: 700; cursor: pointer; }
-        .secondary { background: #475569; }
-        .notice { padding: .75rem 1rem; border-radius: .5rem; background: #dcfce7; color: #166534; }
-        .error { padding: .75rem 1rem; border-radius: .5rem; background: #fef2f2; color: #991b1b; }
-        .muted { color: #64748b; font-size: .9rem; }
-        .table-wrap { overflow-x: auto; }
-        table { width: 100%; border-collapse: collapse; }
-        th, td { padding: .7rem; border-bottom: 1px solid #e2e8f0; text-align: left; vertical-align: top; }
-        th { color: #475569; font-size: .85rem; white-space: nowrap; }
-        input, select { width: 100%; padding: .5rem; border: 1px solid #cbd5e1; border-radius: .4rem; font: inherit; }
-        .payment-form { display: grid; grid-template-columns: repeat(3, minmax(110px, 1fr)); gap: .4rem; min-width: 300px; }
-        .payment-form button { grid-column: 1 / -1; }
-        .overdue { color: #b91c1c; font-weight: 700; }
-        .reminder-group { padding: .25rem 0; }
-        .reminder-group + .reminder-group { margin-top: .5rem; padding-top: .75rem; border-top: 1px solid #e2e8f0; }
-        .reminder-heading { display: flex; align-items: baseline; justify-content: space-between; gap: .75rem; }
-        .reminder-group h3 { margin-bottom: .25rem; font-size: 1rem; }
-        .reminder-group h3 span { color: #64748b; font-size: .82rem; font-weight: 400; }
-        .reminder-heading > strong { color: #334155; font-size: .9rem; white-space: nowrap; }
-        .reminder-group.overdue .reminder-heading > strong { color: #b91c1c; }
-        .reminder-group ul { margin-top: .25rem; padding-left: 1.25rem; }
-        .reminder-group li { margin: .45rem 0; }
-        .reminder-group a { color: inherit; }
-        .reminder-detail { display: block; color: #64748b; font-size: .85rem; }
-        @media (max-width: 700px) { header { padding: 1rem; } main { margin-top: 1rem; } .payment-form { min-width: 280px; } }
+main.receivables-page {
+    width: min(100% - 2rem, 1480px);
+    max-width: 1480px;
+    margin: 1.5rem auto;
+}
+
+.receivables-page .toolbar {
+    display: flex;
+    align-items: flex-start;
+    justify-content: space-between;
+    gap: 1.25rem;
+    margin-bottom: 1.35rem;
+}
+
+.page-heading {
+    min-width: 0;
+    flex: 1 1 20rem;
+}
+
+.page-eyebrow,
+.panel-eyebrow {
+    margin: 0 0 .35rem;
+    color: var(--app-primary);
+    font-size: .67rem;
+    font-weight: 750;
+    letter-spacing: .1em;
+}
+
+.receivables-page .toolbar h1 {
+    margin: 0;
+    color: var(--app-text);
+    font-size: clamp(1.45rem, 2.4vw, 2rem);
+    letter-spacing: -.035em;
+}
+
+.receivables-page .toolbar .muted {
+    max-width: 44rem;
+    margin: .45rem 0 0;
+    color: var(--app-muted);
+}
+
+.page-actions {
+    display: flex;
+    max-width: none;
+    flex: 0 0 auto;
+    flex-wrap: wrap;
+    justify-content: flex-end;
+    gap: .55rem;
+}
+
+.page-actions .button {
+    min-height: 2.7rem;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    white-space: nowrap;
+}
+
+.receivables-page .alert {
+    border-radius: .7rem;
+}
+
+.receivables-page .panel {
+    min-width: 0;
+    margin: 0 0 1rem;
+    padding: 1.2rem;
+}
+
+.receivables-page .panel h2 {
+    margin: 0;
+    color: var(--app-text);
+    font-size: 1.04rem;
+}
+
+.receivables-page .panel-heading {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 1rem;
+    margin-bottom: .85rem;
+}
+
+.receivables-page .panel-eyebrow {
+    margin-bottom: .2rem;
+    font-size: .62rem;
+}
+
+.reminders > .muted {
+    max-width: 66rem;
+    margin: 0 0 1rem;
+    color: var(--app-muted);
+    font-size: .82rem;
+    line-height: 1.55;
+}
+
+.reminder-count {
+    flex: 0 0 auto;
+    padding: .35rem .7rem;
+    border: 1px solid var(--app-border);
+    border-radius: 999px;
+    background: #f5f8f6;
+    color: #53645a;
+    font-size: .72rem;
+    font-weight: 700;
+}
+
+.reminder-group {
+    padding: .75rem .85rem;
+    border: 1px solid var(--app-border);
+    border-left: 3px solid #d5e5db;
+    border-radius: .65rem;
+    background: #fbfcfb;
+}
+
+.reminder-group + .reminder-group {
+    margin-top: .65rem;
+}
+
+.reminder-group.overdue {
+    border-left-color: #bd4d4d;
+    background: #fffafa;
+}
+
+.reminder-heading {
+    display: flex;
+    align-items: baseline;
+    justify-content: space-between;
+    gap: .8rem;
+}
+
+.reminder-group h3 {
+    margin: 0;
+    color: #34443a;
+    font-size: .9rem;
+    font-weight: 700;
+}
+
+.reminder-group h3 span {
+    color: var(--app-muted);
+    font-size: .75rem;
+    font-weight: 500;
+}
+
+.reminder-heading > strong {
+    color: #34443a;
+    font-size: .82rem;
+    white-space: nowrap;
+}
+
+.reminder-group.overdue .reminder-heading > strong,
+.reminder-group.overdue h3 {
+    color: #a83232;
+}
+
+.reminder-group ul {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(min(100%, 16rem), 1fr));
+    gap: .4rem .8rem;
+    margin: .65rem 0 0;
+    padding: .6rem 0 0;
+    border-top: 1px solid #e8eeea;
+    list-style: none;
+}
+
+.reminder-group li {
+    min-width: 0;
+    margin: 0;
+    padding: .15rem 0;
+}
+
+.reminder-group a {
+    color: #236449;
+    font-size: .8rem;
+    font-weight: 650;
+    line-height: 1.4;
+    overflow-wrap: anywhere;
+    text-decoration: none;
+}
+
+.reminder-group.overdue a {
+    color: #9e3434;
+}
+
+.reminder-group a:hover {
+    text-decoration: underline;
+}
+
+.reminder-detail,
+.cell-note {
+    display: block;
+    margin-top: .2rem;
+    color: var(--app-muted);
+    font-size: .7rem;
+    line-height: 1.45;
+}
+
+.receivables-page .table-wrap {
+    overflow-x: auto;
+    border: 1px solid var(--app-border);
+    border-radius: .7rem;
+}
+
+.table-hint {
+    margin: 0 0 .45rem;
+    color: var(--app-muted);
+    font-size: .68rem;
+}
+
+.receivables-page .table {
+    margin: 0;
+    font-size: .78rem;
+}
+
+.receivables-page .table th,
+.receivables-page .table td {
+    padding: .72rem .65rem;
+    vertical-align: middle;
+}
+
+.receivables-page .table th {
+    color: #617067;
+    font-size: .66rem;
+    letter-spacing: .025em;
+    text-transform: uppercase;
+}
+
+.receivables-table {
+    width: 100%;
+    min-width: 1310px;
+    table-layout: fixed;
+}
+
+.receivables-table th:nth-child(1) { width: 170px; }
+.receivables-table th:nth-child(2) { width: 145px; }
+.receivables-table th:nth-child(3) { width: 130px; }
+.receivables-table th:nth-child(4) { width: 140px; }
+.receivables-table th:nth-child(5) { width: 145px; }
+.receivables-table th:nth-child(6) { width: 145px; }
+.receivables-table th:nth-child(7) { width: 110px; }
+.receivables-table th:nth-child(8) { width: 325px; }
+
+.receivables-table tbody tr:target > * {
+    background: #f0f8f3;
+}
+
+.customer-name {
+    color: #35473c;
+    line-height: 1.4;
+    overflow-wrap: anywhere;
+}
+
+.invoice-cell {
+    overflow-wrap: anywhere;
+}
+
+.money-cell {
+    color: #425348;
+    font-size: .75rem;
+    white-space: nowrap;
+}
+
+.money-cell strong {
+    color: #176f50;
+    font-size: .8rem;
+}
+
+.due-cell {
+    white-space: nowrap;
+}
+
+.receivable-status {
+    display: inline-flex;
+    padding: .28rem .55rem;
+    border-radius: 999px;
+    background: #eef3f0;
+    color: #52645a;
+    font-size: .67rem;
+    font-weight: 700;
+    white-space: nowrap;
+}
+
+.overdue {
+    color: #a83232;
+    font-weight: 700;
+}
+
+.overdue .cell-note {
+    color: #a83232;
+}
+
+.payment-form {
+    display: grid;
+    min-width: 0;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: .45rem;
+}
+
+.payment-form input,
+.payment-form button {
+    grid-column: 1 / -1;
+}
+
+.payment-form .form-control,
+.payment-form .form-select {
+    min-width: 0;
+    font-size: .72rem;
+}
+
+.payment-form .btn {
+    min-height: 2.3rem;
+    font-size: .75rem;
+    font-weight: 650;
+}
+
+.payments-table {
+    min-width: 900px;
+}
+
+.receivables-page .table td[colspan] {
+    padding: 2rem 1rem;
+    color: var(--app-muted);
+    text-align: center;
+}
+
+@media (max-width: 800px) {
+    .receivables-page .toolbar {
+        flex-direction: column;
+        gap: .85rem;
+    }
+
+    .page-heading {
+        flex: 0 1 auto;
+    }
+
+    .page-actions {
+        justify-content: flex-start;
+    }
+}
+
+@media (max-width: 600px) {
+    main.receivables-page {
+        width: min(100% - 1rem, 1480px);
+        margin: 1rem auto;
+    }
+
+    .receivables-page .panel {
+        padding: .85rem;
+    }
+
+    .page-actions {
+        width: 100%;
+        justify-content: flex-start;
+    }
+
+    .page-actions .button {
+        flex: 1 1 auto;
+    }
+
+    .reminder-heading {
+        align-items: flex-start;
+        flex-direction: column;
+        gap: .25rem;
+    }
+}

@@ -9,17 +9,20 @@
 </head>
 <body>
 <?= $this->include('layout/sidebar') ?>
-<main>
+<main class="receivables-page">
     <div class="toolbar">
-        <div>
+        <div class="page-heading">
+            <p class="page-eyebrow">KEUANGAN TOKO</p>
             <h1>Piutang pelanggan</h1>
             <p class="muted">Bon grosir, sisa tagihan, jatuh tempo, serta pembayaran cicilan/pelunasan.</p>
         </div>
-        <a class="button btn btn-secondary" href="<?= site_url('kasir') ?>">Kasir</a>
-        <?php if ($roleCode === 'OWNER'): ?>
-            <a class="button btn btn-secondary" href="<?= site_url('piutang/pelanggan') ?>">Data pelanggan</a>
-            <a class="button btn btn-secondary" href="<?= site_url('piutang/kebijakan') ?>">Kebijakan tenor</a>
-        <?php endif ?>
+        <nav class="page-actions" aria-label="Menu piutang">
+            <a class="button btn btn-secondary" href="<?= site_url('kasir') ?>">Kasir</a>
+            <?php if ($roleCode === 'OWNER'): ?>
+                <a class="button btn btn-secondary" href="<?= site_url('piutang/pelanggan') ?>">Data pelanggan</a>
+                <a class="button btn btn-secondary" href="<?= site_url('piutang/kebijakan') ?>">Kebijakan tenor</a>
+            <?php endif ?>
+        </nav>
     </div>
 
     <?php if ($success): ?><p class="notice alert alert-success" role="status"><?= esc($success) ?></p><?php endif ?>
@@ -27,7 +30,13 @@
     <?php if ($accounts === []): ?><p class="error alert alert-danger" role="alert">Akun kas/bank aktif belum tersedia; pembayaran piutang belum dapat dicatat.</p><?php endif ?>
 
     <section class="panel card reminders" aria-labelledby="reminders-title">
-        <h2 id="reminders-title">Tindak lanjut penagihan</h2>
+        <div class="panel-heading">
+            <div>
+                <p class="panel-eyebrow">PRIORITAS</p>
+                <h2 id="reminders-title">Tindak lanjut penagihan</h2>
+            </div>
+            <span class="reminder-count"><?= count($reminders['overdue']) + count($reminders['due_today']) + count($reminders['h3']) ?> pengingat</span>
+        </div>
         <p class="muted">Prioritaskan tagihan yang terlambat, jatuh tempo hari ini, dan yang jatuh tempo H-3 (<?= esc(date('d/m/Y', strtotime($h3Date))) ?>). Hanya sisa tagihan di atas Rp 0 yang ditampilkan.</p>
         <?php if ($reminders['overdue'] === [] && $reminders['due_today'] === [] && $reminders['h3'] === []): ?>
             <p class="muted" role="status">Tidak ada tagihan yang perlu ditagih dalam periode ini.</p>
@@ -67,22 +76,31 @@
         <?php endif ?>
     </section>
 
-    <section class="panel card">
-        <h2>Tagihan yang masih terbuka</h2>
+    <section class="panel card receivables-panel">
+        <div class="panel-heading">
+            <div>
+                <p class="panel-eyebrow">DAFTAR TAGIHAN</p>
+                <h2>Tagihan yang masih terbuka</h2>
+            </div>
+        </div>
+        <p class="table-hint">Geser tabel ke samping untuk melihat semua kolom dan mencatat pembayaran.</p>
         <div class="table-wrap">
-            <table class="table table-hover align-middle">
+            <table class="table table-hover align-middle receivables-table">
                 <thead><tr><th>Pelanggan</th><th>Faktur</th><th>Total bon</th><th>Sudah dibayar</th><th>Sisa tagihan</th><th>Jatuh tempo</th><th>Status</th><th>Catat pembayaran</th></tr></thead>
                 <tbody>
                 <?php foreach ($receivables as $receivable): ?>
                     <?php $isOverdue = $receivable['due_date'] !== null && $receivable['due_date'] < date('Y-m-d'); ?>
                     <tr id="receivable-<?= esc($receivable['receivable_id']) ?>">
-                        <td><?= esc($receivable['customer_code']) ?> · <?= esc($receivable['customer_name']) ?><?= $receivable['business_name'] ? '<br><span class="muted">' . esc($receivable['business_name']) . '</span>' : '' ?></td>
-                        <td><?= esc($receivable['invoice_number'] ?? 'Saldo piutang awal') ?></td>
-                        <td>Rp <?= esc(number_format((float) $receivable['original_amount'], 2, ',', '.')) ?></td>
-                        <td>Rp <?= esc(number_format((float) $receivable['paid_amount'], 2, ',', '.')) ?></td>
-                        <td><strong>Rp <?= esc(number_format((float) $receivable['outstanding_amount'], 2, ',', '.')) ?></strong></td>
-                        <td class="<?= $isOverdue ? 'overdue' : '' ?>"><?= esc($receivable['due_date'] ?? 'Tidak ditentukan') ?><?= $isOverdue ? ' · Terlambat' : '' ?></td>
-                        <td><?= esc($receivable['status']) ?></td>
+                        <td>
+                            <strong class="customer-name"><?= esc($receivable['customer_code']) ?> · <?= esc($receivable['customer_name']) ?></strong>
+                            <?php if ($receivable['business_name']): ?><span class="cell-note"><?= esc($receivable['business_name']) ?></span><?php endif ?>
+                        </td>
+                        <td class="invoice-cell"><?= esc($receivable['invoice_number'] ?? 'Saldo piutang awal') ?></td>
+                        <td class="money-cell">Rp <?= esc(number_format((float) $receivable['original_amount'], 2, ',', '.')) ?></td>
+                        <td class="money-cell">Rp <?= esc(number_format((float) $receivable['paid_amount'], 2, ',', '.')) ?></td>
+                        <td class="money-cell"><strong>Rp <?= esc(number_format((float) $receivable['outstanding_amount'], 2, ',', '.')) ?></strong></td>
+                        <td class="<?= $isOverdue ? 'overdue' : '' ?> due-cell"><?= esc($receivable['due_date'] ?? 'Tidak ditentukan') ?><?= $isOverdue ? '<span class="cell-note">Terlambat</span>' : '' ?></td>
+                        <td><span class="receivable-status"><?= esc($receivable['status']) ?></span></td>
                         <td>
                             <?php if ($accounts !== []): ?>
                                 <form class="payment-form" method="post" action="<?= site_url('piutang/' . $receivable['receivable_id'] . '/pembayaran') ?>">
@@ -112,8 +130,9 @@
     </section>
     <section class="panel card">
         <h2>Riwayat pembayaran terbaru</h2>
+        <p class="table-hint">Geser tabel ke samping untuk melihat seluruh riwayat.</p>
         <div class="table-wrap">
-            <table class="table table-hover align-middle">
+            <table class="table table-hover align-middle payments-table">
                 <thead><tr><th>Waktu</th><th>Pelanggan</th><th>Faktur</th><th>Jumlah</th><th>Metode</th><th>Akun</th><th>Dicatat oleh</th></tr></thead>
                 <tbody>
                 <?php foreach ($recentPayments as $payment): ?>
