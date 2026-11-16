@@ -21,8 +21,11 @@ class Receivables extends BaseController
                     penjualan.invoice_number, piutang.original_amount, piutang.due_date, piutang.status,
                     COALESCE(payments.paid_amount, 0.00) AS paid_amount,
                     COALESCE(adjustments.adjusted_amount, 0.00) AS adjusted_amount,
-                    piutang.original_amount - COALESCE(payments.paid_amount, 0.00)
-                        - COALESCE(adjustments.adjusted_amount, 0.00) AS outstanding_amount
+                    GREATEST(
+                        piutang.original_amount - COALESCE(payments.paid_amount, 0.00)
+                            - COALESCE(adjustments.adjusted_amount, 0.00),
+                        0.00
+                    ) AS outstanding_amount
              FROM piutang
              JOIN pelanggan ON pelanggan.customer_id = piutang.customer_id
              LEFT JOIN penjualan ON penjualan.sale_id = piutang.sale_id
