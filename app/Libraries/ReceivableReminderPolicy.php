@@ -3,10 +3,20 @@
 namespace App\Libraries;
 
 use DateTimeImmutable;
+use DateTimeZone;
 
 class ReceivableReminderPolicy
 {
     public const DAYS_BEFORE_DUE = 3;
+
+    public static function todayInJakarta(?DateTimeImmutable $now = null): DateTimeImmutable
+    {
+        $timezone = new DateTimeZone('Asia/Jakarta');
+
+        return ($now ?? new DateTimeImmutable('now', $timezone))
+            ->setTimezone($timezone)
+            ->setTime(0, 0);
+    }
 
     public static function category(?string $dueDate, float $outstandingAmount, DateTimeImmutable $today): ?string
     {

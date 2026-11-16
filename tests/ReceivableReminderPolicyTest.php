@@ -34,4 +34,13 @@ class ReceivableReminderPolicyTest extends TestCase
         self::assertNull(ReceivableReminderPolicy::category(null, 250.0, $this->today));
         self::assertNull(ReceivableReminderPolicy::category('2026-11-19', -1.0, $this->today));
     }
+
+    public function testGetsCurrentDayInJakartaEvenWhenTheProcessRunsInUtc(): void
+    {
+        $now = new DateTimeImmutable('2026-11-15 17:30:00', new DateTimeZone('UTC'));
+        $today = ReceivableReminderPolicy::todayInJakarta($now);
+
+        self::assertSame('2026-11-16', $today->format('Y-m-d'));
+        self::assertSame('Asia/Jakarta', $today->getTimezone()->getName());
+    }
 }
