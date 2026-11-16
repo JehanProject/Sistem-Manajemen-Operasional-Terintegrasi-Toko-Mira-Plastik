@@ -12,9 +12,7 @@ class Dashboard extends BaseController
         $roleCode = (string) session()->get('role_code');
         $canViewFinancials = in_array($roleCode, ['OWNER', 'KASIR'], true);
         $today = date('Y-m-d');
-        $h3Date = (new \DateTimeImmutable($today))
-            ->modify('+' . ReceivableReminderPolicy::DAYS_BEFORE_DUE . ' days')
-            ->format('Y-m-d');
+        $todayDate = new \DateTimeImmutable($today);
 
         $stock = $db->query(
             "SELECT COUNT(CASE WHEN COALESCE(stock.total_quantity, 0) <= 0 THEN 1 END) AS out_of_stock,
@@ -63,50 +61,59 @@ class Dashboard extends BaseController
                 $salesParams,
             )->getRowArray();
 
-            $receivables = $db->query(
-                "SELECT
-                    COALESCE(SUM(outstanding_amount), 0.00) AS outstanding_amount,
-                    COUNT(CASE WHEN due_date < ? AND outstanding_amount > 0 THEN 1 END) AS overdue_count,
-                    COALESCE(SUM(CASE WHEN due_date < ? AND outstanding_amount > 0 THEN outstanding_amount ELSE 0.00 END), 0.00) AS overdue_amount,
-                    COUNT(CASE WHEN due_date = ? AND outstanding_amount > 0 THEN 1 END) AS due_today_count,
-                    COALESCE(SUM(CASE WHEN due_date = ? AND outstanding_amount > 0 THEN outstanding_amount ELSE 0.00 END), 0.00) AS due_today_amount,
-                    COUNT(CASE WHEN due_date = ? AND outstanding_amount > 0 THEN 1 END) AS h3_count,
-                    COALESCE(SUM(CASE WHEN due_date = ? AND outstanding_amount > 0 THEN outstanding_amount ELSE 0.00 END), 0.00) AS h3_amount
-                 FROM (
-                     SELECT piutang.due_date,
-                            GREATEST(
-                                piutang.original_amount
-                                    - COALESCE(payments.paid_amount, 0.00)
-                                    - COALESCE(adjustments.adjusted_amount, 0.00),
-                                0.00
-                            ) AS outstanding_amount
-                     FROM piutang
-                     LEFT JOIN (
-                         SELECT receivable_id, SUM(amount) AS paid_amount
-                         FROM pembayaran_piutang
-                         GROUP BY receivable_id
-                     ) AS payments ON payments.receivable_id = piutang.receivable_id
-                     LEFT JOIN (
-                         SELECT receivable_id, SUM(amount) AS adjusted_amount
-                         FROM penyesuaian_piutang
-                         GROUP BY receivable_id
-                     ) AS adjustments ON adjustments.receivable_id = piutang.receivable_id
-                     WHERE piutang.status IN ('OPEN', 'PARTIALLY_PAID')
-                 ) AS open_receivables",
-                [$today, $today, $today, $today, $h3Date, $h3Date],
-            )->getRowArray();
+            $receivableRows = $db->query(
+                "SELECT piutang.due_date,
+                        GREATEST(
+                            piutang.original_amount
+                                - COALESCE(payments.paid_amount, 0.00)
+                                - COALESCE(adjustments.adjusted_amount, 0.00),
+                            0.00
+                        ) AS outstanding_amount
+                 FROM piutang
+                 LEFT JOIN (
+                     SELECT receivable_id, SUM(amount) AS paid_amount
+                     FROM pembayaran_piutang
+                     GROUP BY receivable_id
+                 ) AS payments ON payments.receivable_id = piutang.receivable_id
+                 LEFT JOIN (
+                     SELECT receivable_id, SUM(amount) AS adjusted_amount
+                     FROM penyesuaian_piutang
+                     GROUP BY receivable_id
+                 ) AS adjustments ON adjustments.receivable_id = piutang.receivable_id
+                 WHERE piutang.status IN ('OPEN', 'PARTIALLY_PAID')",
+            )->getResultArray();
+            $reminderTotals = [
+                'overdue' => ['count' => 0, 'amount' => 0.0],
+                'due_today' => ['count' => 0, 'amount' => 0.0],
+                'h3' => ['count' => 0, 'amount' => 0.0],
+            ];
+            $outstandingReceivables = 0.0;
+            foreach ($receivableRows as $receivable) {
+                $outstandingAmount = (float) $receivable['outstanding_amount'];
+                $outstandingReceivables += $outstandingAmount;
+
+                $category = ReceivableReminderPolicy::category(
+                    $receivable['due_date'],
+                    $outstandingAmount,
+                    $todayDate,
+                );
+                if ($category !== null) {
+                    $reminderTotals[$category]['count']++;
+                    $reminderTotals[$category]['amount'] += $outstandingAmount;
+                }
+            }
 
             $metrics['saleCount'] = (int) ($sales['sale_count'] ?? 0);
             $metrics['salesToday'] = (float) ($sales['total_amount'] ?? 0);
             $metrics['retailCount'] = (int) ($sales['retail_count'] ?? 0);
             $metrics['wholesaleCount'] = (int) ($sales['wholesale_count'] ?? 0);
-            $metrics['outstandingReceivables'] = (float) ($receivables['outstanding_amount'] ?? 0);
-            $metrics['overdueCount'] = (int) ($receivables['overdue_count'] ?? 0);
-            $metrics['overdueAmount'] = (float) ($receivables['overdue_amount'] ?? 0);
-            $metrics['dueTodayCount'] = (int) ($receivables['due_today_count'] ?? 0);
-            $metrics['dueTodayAmount'] = (float) ($receivables['due_today_amount'] ?? 0);
-            $metrics['h3ReceivablesCount'] = (int) ($receivables['h3_count'] ?? 0);
-            $metrics['h3ReceivablesAmount'] = (float) ($receivables['h3_amount'] ?? 0);
+            $metrics['outstandingReceivables'] = $outstandingReceivables;
+            $metrics['overdueCount'] = $reminderTotals['overdue']['count'];
+            $metrics['overdueAmount'] = $reminderTotals['overdue']['amount'];
+            $metrics['dueTodayCount'] = $reminderTotals['due_today']['count'];
+            $metrics['dueTodayAmount'] = $reminderTotals['due_today']['amount'];
+            $metrics['h3ReceivablesCount'] = $reminderTotals['h3']['count'];
+            $metrics['h3ReceivablesAmount'] = $reminderTotals['h3']['amount'];
 
             $adjustments = $db->query(
                 "SELECT COUNT(*) AS pending_count,
