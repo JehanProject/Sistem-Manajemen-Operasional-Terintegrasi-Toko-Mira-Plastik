@@ -13,6 +13,7 @@ class SaleAdjustments extends BaseController
     public function index(): string
     {
         helper('form');
+        helper('inventory');
         $db = db_connect();
         $adjustments = $db->query(
             "SELECT adjustment.sale_adjustment_id, adjustment.sale_id, adjustment.adjustment_type,
@@ -135,7 +136,7 @@ class SaleAdjustments extends BaseController
             ->get()
             ->getResultArray();
 
-        helper('form');
+        helper(['form', 'inventory']);
         return view('sale_adjustments/request', [
             'sale' => $sale,
             'allocations' => $allocations,
